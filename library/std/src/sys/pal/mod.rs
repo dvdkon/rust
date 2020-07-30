@@ -58,6 +58,9 @@ cfg_if::cfg_if! {
     } else if #[cfg(target_os = "zkvm")] {
         mod zkvm;
         pub use self::zkvm::*;
+    } else if #[cfg(target_os = "psp")] {
+        mod psp;
+        pub use self::psp::*;
     } else {
         mod unsupported;
         pub use self::unsupported::*;
