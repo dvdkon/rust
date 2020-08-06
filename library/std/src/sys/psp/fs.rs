@@ -1,7 +1,7 @@
-use crate::ffi::{CString, OsString, c_void};
+use crate::ffi::{c_void, CString, OsString};
 use crate::fmt;
 use crate::hash::{Hash, Hasher};
-use crate::io::{self, IoSlice, IoSliceMut, SeekFrom, ReadBuf};
+use crate::io::{self, IoSlice, IoSliceMut, ReadBuf, SeekFrom};
 use crate::path::{Path, PathBuf};
 use crate::sys::time::SystemTime;
 use crate::sys::{unsupported, Void};
@@ -9,6 +9,7 @@ pub use crate::sys_common::fs::try_exists;
 
 pub struct File(libc::SceUid);
 
+#[derive(Copy, Clone)]
 pub struct FileAttr(libc::SceIoStat);
 
 pub struct ReadDir(Void);
@@ -21,9 +22,18 @@ pub struct OpenOptions {
     perms: libc::IoPermissions,
 }
 
+#[derive(Copy, Clone, Eq, PartialEq, Debug)]
 pub struct FilePermissions(libc::IoPermissions);
 
-pub struct FileType(Void);
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+pub struct FileType(_FileType);
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+enum _FileType {
+    Symlink,
+    Directory,
+    File,
+}
 
 #[derive(Debug)]
 pub struct DirBuilder {}
@@ -34,29 +44,35 @@ impl FileAttr {
     }
 
     pub fn perm(&self) -> FilePermissions {
-        unimplemented!()
+        FilePermissions(self.0.st_mode & 0o777)
     }
 
     pub fn file_type(&self) -> FileType {
-        unimplemented!()
+        if self.0.st_attr & libc::FIO_SO_IFLNK != 0 {
+            return FileType(_FileType::Symlink);
+        }
+        if self.0.st_attr & libc::FIO_SO_IFDIR != 0 {
+            return FileType(_FileType::Directory);
+        }
+        if self.0.st_attr & libc::FIO_SO_IFREG != 0 {
+            return FileType(_FileType::File);
+        }
+        unreachable!()
     }
 
     pub fn modified(&self) -> io::Result<SystemTime> {
-        unsupported()
+        SystemTime::try_from_psp_time(&self.0.st_mtime)
+            .map_err(|_| io::Error::new(io::ErrorKind::Other, "Invalid file modification date"))
     }
 
     pub fn accessed(&self) -> io::Result<SystemTime> {
-        unsupported()
+        SystemTime::try_from_psp_time(&self.0.st_atime)
+            .map_err(|_| io::Error::new(io::ErrorKind::Other, "Invalid file access date"))
     }
 
     pub fn created(&self) -> io::Result<SystemTime> {
-        unsupported()
-    }
-}
-
-impl Clone for FileAttr {
-    fn clone(&self) -> FileAttr {
-        unimplemented!()
+        SystemTime::try_from_psp_time(&self.0.st_ctime)
+            .map_err(|_| io::Error::new(io::ErrorKind::Other, "Invalid file creation date"))
     }
 }
 
@@ -70,65 +86,26 @@ impl FilePermissions {
     }
 }
 
-impl Clone for FilePermissions {
-    fn clone(&self) -> FilePermissions {
-        unimplemented!()
-    }
-}
-
-impl PartialEq for FilePermissions {
-    fn eq(&self, _other: &FilePermissions) -> bool {
-        unimplemented!()
-    }
-}
-
-impl Eq for FilePermissions {}
-
-impl fmt::Debug for FilePermissions {
-    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        unimplemented!()
-    }
-}
-
 impl FileType {
     pub fn is_dir(&self) -> bool {
-        match self.0 {}
+        match self.0 {
+            _FileType::Directory => true,
+            _ => false,
+        }
     }
 
     pub fn is_file(&self) -> bool {
-        match self.0 {}
+        match self.0 {
+            _FileType::File => true,
+            _ => false,
+        }
     }
 
     pub fn is_symlink(&self) -> bool {
-        match self.0 {}
-    }
-}
-
-impl Clone for FileType {
-    fn clone(&self) -> FileType {
-        match self.0 {}
-    }
-}
-
-impl Copy for FileType {}
-
-impl PartialEq for FileType {
-    fn eq(&self, _other: &FileType) -> bool {
-        match self.0 {}
-    }
-}
-
-impl Eq for FileType {}
-
-impl Hash for FileType {
-    fn hash<H: Hasher>(&self, _h: &mut H) {
-        match self.0 {}
-    }
-}
-
-impl fmt::Debug for FileType {
-    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self.0 {}
+        match self.0 {
+            _FileType::Symlink => true,
+            _ => false,
+        }
     }
 }
 
@@ -166,10 +143,7 @@ impl DirEntry {
 
 impl OpenOptions {
     pub fn new() -> OpenOptions {
-        OpenOptions {
-            flags: 0,
-            perms: 0o666,
-        }
+        OpenOptions { flags: 0, perms: 0o666 }
     }
 
     pub fn read(&mut self, read: bool) {
@@ -234,9 +208,8 @@ impl File {
     }
 
     pub fn read(&self, buf: &mut [u8]) -> io::Result<usize> {
-        let read_result = unsafe {
-            libc::sceIoRead(self.0, buf.as_mut_ptr() as *mut c_void, buf.len() as u32)
-        };
+        let read_result =
+            unsafe { libc::sceIoRead(self.0, buf.as_mut_ptr() as *mut c_void, buf.len() as u32) };
         if read_result < 0 {
             return Err(cvt_io_error(read_result));
         } else {
@@ -257,9 +230,8 @@ impl File {
     }
 
     pub fn write(&self, buf: &[u8]) -> io::Result<usize> {
-        let write_result = unsafe {
-            libc::sceIoWrite(self.0, buf.as_ptr() as *const c_void, buf.len())
-        };
+        let write_result =
+            unsafe { libc::sceIoWrite(self.0, buf.as_ptr() as *const c_void, buf.len()) };
         if write_result < 0 {
             return Err(cvt_io_error(write_result));
         } else {
@@ -281,9 +253,9 @@ impl File {
 
     pub fn seek(&self, pos: SeekFrom) -> io::Result<u64> {
         //let (whence, pos) = match pos {
-            //SeekFrom::Start(off) => (libc::IoWhence::Set, off as i64),
-            //SeekFrom::End(off) => (libc::IoWhence::End, off),
-            //SeekFrom::Current(off) => (libc::IoWhence::Cur, off),
+        //SeekFrom::Start(off) => (libc::IoWhence::Set, off as i64),
+        //SeekFrom::End(off) => (libc::IoWhence::End, off),
+        //SeekFrom::Current(off) => (libc::IoWhence::Cur, off),
         //};
         //Ok(unsafe{libc::sceIoLseek(self.0, pos, whence)} as u64)
         // broken somehow
@@ -320,7 +292,9 @@ impl DirBuilder {
 }
 
 fn cstring(path: &Path) -> io::Result<CString> {
-    Ok(CString::new(path.to_str().ok_or(io::Error::new(io::ErrorKind::InvalidInput, "Path to str failed"))?)?)
+    Ok(CString::new(
+        path.to_str().ok_or(io::Error::new(io::ErrorKind::InvalidInput, "Path to str failed"))?,
+    )?)
 }
 
 impl fmt::Debug for File {
@@ -340,18 +314,18 @@ pub fn readdir(p: &Path) -> io::Result<ReadDir> {
     //let cstring = cstring(p)?;
     //let open_result = libc::sceIoDopen(cstring.as_c_str().as_ptr() as *const u8);
     //if open_result.0 < 0 {
-        //// Need to enumerate errors to return the proper io::ErrorKind
-        //unimplemented!()
+    //// Need to enumerate errors to return the proper io::ErrorKind
+    //unimplemented!()
     //} else {
-        //let mut dirent: libc::SceIoDirent = core::mem::zeroed();
-        //let read_result = libc::sceIoDread(open_result, &mut dirent); 
-        //if read_result < 0 {
-            //unimplemented!()
-        //} else {
-            //Ok(ReadDir(dirent))
-        //}
+    //let mut dirent: libc::SceIoDirent = core::mem::zeroed();
+    //let read_result = libc::sceIoDread(open_result, &mut dirent);
+    //if read_result < 0 {
+    //unimplemented!()
+    //} else {
+    //Ok(ReadDir(dirent))
     //}
-    // I think maybe this is supposed to recursively build DirEntrys into a linked 
+    //}
+    // I think maybe this is supposed to recursively build DirEntrys into a linked
     // list or some shit
 }
 
@@ -368,7 +342,12 @@ pub fn unlink(p: &Path) -> io::Result<()> {
 pub fn rename(old: &Path, new: &Path) -> io::Result<()> {
     let cstring_old = cstring(old)?;
     let cstring_new = cstring(new)?;
-    let rename_result = unsafe { libc::sceIoRename(cstring_old.as_c_str().as_ptr() as *const u8, cstring_new.as_c_str().as_ptr() as *const u8) };
+    let rename_result = unsafe {
+        libc::sceIoRename(
+            cstring_old.as_c_str().as_ptr() as *const u8,
+            cstring_new.as_c_str().as_ptr() as *const u8,
+        )
+    };
     if rename_result < 0 {
         return Err(cvt_io_error(rename_result));
     } else {
@@ -379,13 +358,16 @@ pub fn rename(old: &Path, new: &Path) -> io::Result<()> {
 pub fn set_perm(p: &Path, perm: FilePermissions) -> io::Result<()> {
     let cstring = cstring(p)?;
     let mut stat: libc::SceIoStat = unsafe { core::mem::zeroed() };
-    let getstat_result = unsafe { libc::sceIoGetstat(cstring.as_c_str().as_ptr() as *const u8, &mut stat)};
+    let getstat_result =
+        unsafe { libc::sceIoGetstat(cstring.as_c_str().as_ptr() as *const u8, &mut stat) };
     if getstat_result < 0 {
         return Err(cvt_io_error(getstat_result));
     } else {
-        let non_perm_mode_bits = stat.st_mode & 0x7e00;  
+        let non_perm_mode_bits = stat.st_mode & 0x7e00;
         stat.st_mode = non_perm_mode_bits | perm.0;
-        let chstat_result = unsafe { libc::sceIoChstat(cstring.as_c_str().as_ptr() as *const u8, &mut stat, 0x0001) }; 
+        let chstat_result = unsafe {
+            libc::sceIoChstat(cstring.as_c_str().as_ptr() as *const u8, &mut stat, 0x0001)
+        };
         if chstat_result < 0 {
             return Err(cvt_io_error(chstat_result));
         } else {
@@ -402,7 +384,6 @@ pub fn rmdir(p: &Path) -> io::Result<()> {
     } else {
         Ok(())
     }
- 
 }
 
 pub use crate::sys_common::fs::remove_dir_all;
@@ -420,17 +401,15 @@ pub fn link(_src: &Path, _dst: &Path) -> io::Result<()> {
 }
 
 pub fn stat(p: &Path) -> io::Result<FileAttr> {
-    let mut stat: libc::SceIoStat = unsafe { core::mem::zeroed() }; 
+    let mut stat: libc::SceIoStat = unsafe { core::mem::zeroed() };
     let cstring = cstring(p)?;
-    let stat_result = unsafe {
-        libc::sceIoGetstat(cstring.as_c_str().as_ptr() as *const u8, &mut stat)
-    };
+    let stat_result =
+        unsafe { libc::sceIoGetstat(cstring.as_c_str().as_ptr() as *const u8, &mut stat) };
     if stat_result < 0 {
         return Err(cvt_io_error(stat_result));
     } else {
         Ok(FileAttr(stat))
     }
-   
 }
 
 pub fn lstat(_p: &Path) -> io::Result<FileAttr> {
