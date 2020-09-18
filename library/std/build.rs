@@ -36,6 +36,7 @@ fn main() {
         || target.contains("uefi")
         || target.contains("teeos")
         || target.contains("zkvm")
+        || target.contains("psp")
         // See src/bootstrap/synthetic_targets.rs
         || env::var("RUSTC_BOOTSTRAP_SYNTHETIC_TARGET").is_ok()
     {
@@ -45,7 +46,6 @@ fn main() {
         // typically no_std platforms.
         // This covers:
         // - os=none ("bare metal" targets)
-        // - mipsel-sony-psp
         // - nvptx64-nvidia-cuda
         // - arch=avr
         // - JSON targets

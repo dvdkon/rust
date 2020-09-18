@@ -47,7 +47,8 @@ cfg_if::cfg_if! {
         all(unix, not(target_os = "l4re")),
         windows,
         target_os = "hermit",
-        target_os = "solid_asp3"
+        target_os = "solid_asp3",
+        target_os = "psp"
     ))] {
         pub mod net;
     } else {
