@@ -283,7 +283,11 @@ impl File {
 
     pub fn read(&self, buf: &mut [u8]) -> io::Result<usize> {
         let read_result =
+<<<<<<< HEAD
             unsafe { libc::sceIoRead(self.0, buf.as_mut_ptr() as *mut c_void, buf.len() as u32) };
+=======
+            unsafe { libc::sceIoRead(self.fd, buf.as_mut_ptr() as *mut c_void, buf.len() as u32) };
+>>>>>>> bec17a063c9 (more fixes)
         if read_result < 0 {
             return Err(cvt_io_error(read_result));
         } else {
@@ -296,7 +300,11 @@ impl File {
     }
 
     pub fn read_vectored(&self, _bufs: &mut [IoSliceMut<'_>]) -> io::Result<usize> {
+<<<<<<< HEAD
         crate::io::default_read_vectored(|buf| self.read(buf), bufs)
+=======
+        match self.0 {}
+>>>>>>> bec17a063c9 (more fixes)
     }
 
     pub fn is_read_vectored(&self) -> bool {
@@ -305,7 +313,11 @@ impl File {
 
     pub fn write(&self, buf: &[u8]) -> io::Result<usize> {
         let write_result =
+<<<<<<< HEAD
             unsafe { libc::sceIoWrite(self.0, buf.as_ptr() as *const c_void, buf.len()) };
+=======
+            unsafe { libc::sceIoWrite(self.fd, buf.as_ptr() as *const c_void, buf.len()) };
+>>>>>>> bec17a063c9 (more fixes)
         if write_result < 0 {
             return Err(cvt_io_error(write_result));
         } else {
