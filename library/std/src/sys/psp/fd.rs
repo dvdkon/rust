@@ -1,7 +1,7 @@
 #![unstable(reason = "not public", issue = "none", feature = "fd")]
 
 use crate::cmp;
-use crate::io::{self, IoSlice, IoSliceMut, Read};
+use crate::io::{self, IoSlice, IoSliceMut, Read, ReadBuf};
 use crate::mem;
 use crate::sys::decode_error_kind;
 use crate::sys_common::AsInner;
@@ -142,16 +142,9 @@ impl<'a> Read for &'a FileDesc {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         (**self).read(buf)
     }
-
-    #[inline]
-    fn read_buf(&mut self, buf: &mut ReadBuf<'_>) -> Result<()> {
-        unsafe {
-            let unfilled = buf.unfilled_mut();
-            let ret = sceIoRead(self.fd, unfilled.as_mut_ptr() as *mut c_void, buf.len() as u32);
-            buf.add_filled(ret as usize);
-        }
-    }
-}
+    fn read_buf(&mut self, buf: &mut ReadBuf<'_>) -> io::Result<()> {
+        crate::io::default_read_buf(|buf| self.read(buf), buf)
+    }}
 
 impl AsInner<SceUid> for FileDesc {
     fn as_inner(&self) -> &SceUid {

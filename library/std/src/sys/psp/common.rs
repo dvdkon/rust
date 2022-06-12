@@ -4,14 +4,20 @@ pub mod memchr {
     pub use core::slice::memchr::{memchr, memrchr};
 }
 
-pub use crate::sys_common::os_str_bytes as os_str;
+#[path = "../unix/os_str.rs"]
+pub mod os_str;
 
 // This is not necessarily correct. May want to consider making it part of the
 // spec definition?
 use crate::os::raw::c_char;
 
-#[cfg(not(test))]
-pub fn init() {}
+pub unsafe fn init(argc: isize, argv: *const *const u8) {
+    //unsafe {
+        //args::init(argc, argv);
+    //}
+}
+
+pub unsafe fn cleanup() {}
 
 pub fn unsupported<T>() -> std_io::Result<T> {
     Err(unsupported_err())

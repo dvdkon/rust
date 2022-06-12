@@ -11,6 +11,7 @@ pub mod net;
 pub mod os;
 pub mod path;
 pub mod pipe;
+#[path = "../unsupported/process.rs"]
 pub mod process;
 pub mod rwlock;
 pub mod stack_overflow;
@@ -20,6 +21,8 @@ pub mod thread;
 pub mod thread_local_dtor;
 pub mod thread_local_key;
 pub mod time;
+#[path = "../unsupported/locks/mod.rs"]
+pub mod locks;
 
 mod common;
 pub use common::*;

@@ -1,10 +1,11 @@
 use crate::ffi::OsString;
 use crate::fmt;
 use crate::hash::{Hash, Hasher};
-use crate::io::{self, IoSlice, IoSliceMut, SeekFrom};
+use crate::io::{self, IoSlice, IoSliceMut, SeekFrom, ReadBuf};
 use crate::path::{Path, PathBuf};
 use crate::sys::time::SystemTime;
 use crate::sys::{unsupported, Void};
+pub use crate::sys_common::fs::try_exists;
 
 pub struct File(Void);
 
@@ -196,6 +197,10 @@ impl File {
 
     pub fn read(&self, _buf: &mut [u8]) -> io::Result<usize> {
         match self.0 {}
+    }
+
+    pub fn read_buf(&self, buf: &mut ReadBuf<'_>) -> io::Result<()> {
+        crate::io::default_read_buf(|buf| self.read(buf), buf)
     }
 
     pub fn read_vectored(&self, _bufs: &mut [IoSliceMut<'_>]) -> io::Result<usize> {
