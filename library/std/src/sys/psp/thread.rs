@@ -2,6 +2,7 @@ use super::{unsupported, Void};
 use crate::ffi::CStr;
 use crate::io;
 use crate::time::Duration;
+use crate::num::NonZeroUsize;
 
 pub struct Thread(Void);
 
@@ -38,4 +39,8 @@ pub mod guard {
     pub unsafe fn init() -> Option<Guard> {
         None
     }
+}
+
+pub fn available_parallelism() -> io::Result<NonZeroUsize> {
+    unsupported()
 }
