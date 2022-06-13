@@ -1,9 +1,12 @@
 use super::{unsupported, Void};
 use crate::error::Error as StdError;
-use crate::ffi::{OsStr, OsString};
+use crate::ffi::{CString, OsStr, OsString};
 use crate::fmt;
 use crate::io;
+use crate::os::psp::ffi::OsStrExt;
 use crate::path::{self, PathBuf};
+
+static mut CWD: Option<CString> = None;
 
 pub fn errno() -> i32 {
     0
@@ -14,11 +17,22 @@ pub fn error_string(_errno: i32) -> String {
 }
 
 pub fn getcwd() -> io::Result<PathBuf> {
-    unsupported()
+    // Safety: PSP does not have concurrent threads
+    unsafe { CWD.as_ref() }
+        .map(|c| PathBuf::from(OsStr::from_bytes(c.to_bytes())))
+        .ok_or(io::const_io_error!(io::ErrorKind::Other, "current directory is not set",))
 }
 
-pub fn chdir(_: &path::Path) -> io::Result<()> {
-    unsupported()
+pub fn chdir(path: &path::Path) -> io::Result<()> {
+    let path = CString::new(path.as_os_str().as_bytes())?;
+    let result = unsafe { libc::sceIoChdir(path.as_ptr() as *const u8) };
+    if result < 0 {
+        // TODO propagate the error code
+        return Err(io::const_io_error!(io::ErrorKind::Other, "could not set current directory",));
+    }
+    // Safety: PSP does not have concurrent threads
+    unsafe { CWD = Some(path.to_owned()) };
+    Ok(())
 }
 
 pub struct SplitPaths<'a>(&'a Void);
