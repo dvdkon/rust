@@ -1,7 +1,8 @@
-use crate::ffi::{c_void, CString, OsString};
+use crate::ffi::{c_void, CStr, CString, OsStr, OsString};
 use crate::fmt;
 use crate::hash::{Hash, Hasher};
 use crate::io::{self, IoSlice, IoSliceMut, ReadBuf, SeekFrom};
+use crate::os::psp::ffi::OsStrExt;
 use crate::path::{Path, PathBuf};
 use crate::sys::io::cvt_io_error;
 use crate::sys::time::SystemTime;
@@ -159,8 +160,8 @@ impl DirEntry {
     }
 
     pub fn file_name(&self) -> OsString {
-        // TODO maybe it's not utf8?
-        OsString::from(unsafe { String::from_utf8_unchecked(self.0.d_name.to_vec()) })
+        let s = CStr::from_bytes_until_nul(&self.0.d_name).unwrap();
+        OsStr::from_bytes(s.to_bytes()).to_owned()
     }
 
     pub fn metadata(&self) -> io::Result<FileAttr> {
@@ -283,11 +284,7 @@ impl File {
 
     pub fn read(&self, buf: &mut [u8]) -> io::Result<usize> {
         let read_result =
-<<<<<<< HEAD
-            unsafe { libc::sceIoRead(self.0, buf.as_mut_ptr() as *mut c_void, buf.len() as u32) };
-=======
             unsafe { libc::sceIoRead(self.fd, buf.as_mut_ptr() as *mut c_void, buf.len() as u32) };
->>>>>>> bec17a063c9 (more fixes)
         if read_result < 0 {
             return Err(cvt_io_error(read_result));
         } else {
@@ -296,15 +293,11 @@ impl File {
     }
 
     pub fn read_buf(&self, buf: &mut ReadBuf<'_>) -> io::Result<()> {
-        crate::io::default_read_buf(|buf| self.read(buf), buf)
+        io::default_read_buf(|buf| self.read(buf), buf)
     }
 
-    pub fn read_vectored(&self, _bufs: &mut [IoSliceMut<'_>]) -> io::Result<usize> {
-<<<<<<< HEAD
-        crate::io::default_read_vectored(|buf| self.read(buf), bufs)
-=======
-        match self.0 {}
->>>>>>> bec17a063c9 (more fixes)
+    pub fn read_vectored(&self, bufs: &mut [IoSliceMut<'_>]) -> io::Result<usize> {
+        io::default_read_vectored(|b| self.read(b), bufs)
     }
 
     pub fn is_read_vectored(&self) -> bool {
@@ -313,11 +306,7 @@ impl File {
 
     pub fn write(&self, buf: &[u8]) -> io::Result<usize> {
         let write_result =
-<<<<<<< HEAD
-            unsafe { libc::sceIoWrite(self.0, buf.as_ptr() as *const c_void, buf.len()) };
-=======
             unsafe { libc::sceIoWrite(self.fd, buf.as_ptr() as *const c_void, buf.len()) };
->>>>>>> bec17a063c9 (more fixes)
         if write_result < 0 {
             return Err(cvt_io_error(write_result));
         } else {
@@ -326,7 +315,7 @@ impl File {
     }
 
     pub fn write_vectored(&self, bufs: &[IoSlice<'_>]) -> io::Result<usize> {
-        crate::io::default_write_vectored(|buf| self.write(buf), bufs)
+        io::default_write_vectored(|buf| self.write(buf), bufs)
     }
 
     pub fn is_write_vectored(&self) -> bool {

@@ -1,4 +1,8 @@
-use crate::io as std_io;
+use super::args;
+use crate::env::set_current_dir;
+use crate::io;
+use crate::os::psp::ffi::OsStringExt;
+use crate::path::PathBuf;
 
 pub mod memchr {
     pub use core::slice::memchr::{memchr, memrchr};
@@ -12,23 +16,33 @@ pub mod os_str;
 use crate::os::raw::c_char;
 
 pub unsafe fn init(argc: isize, argv: *const *const u8) {
-    //unsafe {
-        //args::init(argc, argv);
-    //}
+    // First of all, the arguments types of this function are incorrect, but it's easier to cast
+    // them here instead of fixing `std`.
+    let argc = argc as usize;
+    let argv = argv as *const u8;
+
+    args::init(argc, argv);
+
+    // Init CWD based on the first argument
+    if let Some(arg0) = args::args().next() {
+        let mut arg0: PathBuf = arg0.into();
+        arg0.pop();
+        let _ = set_current_dir(arg0);
+    }
 }
 
 pub unsafe fn cleanup() {}
 
-pub fn unsupported<T>() -> std_io::Result<T> {
+pub fn unsupported<T>() -> io::Result<T> {
     Err(unsupported_err())
 }
 
-pub fn unsupported_err() -> std_io::Error {
-    std_io::Error::new(std_io::ErrorKind::Other, "operation not supported on this platform")
+pub fn unsupported_err() -> io::Error {
+    io::Error::new(io::ErrorKind::Other, "operation not supported on this platform")
 }
 
-pub fn decode_error_kind(_code: i32) -> crate::io::ErrorKind {
-    crate::io::ErrorKind::Other
+pub fn decode_error_kind(_code: i32) -> io::ErrorKind {
+    io::ErrorKind::Other
 }
 
 pub fn abort_internal() -> ! {
@@ -44,11 +58,7 @@ pub fn hashmap_random_keys() -> (u64, u64) {
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Debug, Hash)]
 pub enum Void {}
 
-pub unsafe fn strlen(mut s: *const c_char) -> usize {
-    let mut n = 0;
-    while *s != 0 {
-        n += 1;
-        s = s.offset(1);
-    }
-    return n;
+extern "C" {
+    /// Provided by libc or compiler_builtins.
+    pub fn strlen(s: *const c_char) -> usize;
 }

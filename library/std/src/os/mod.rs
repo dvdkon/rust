@@ -136,7 +136,6 @@ pub mod nto;
 #[cfg(target_os = "openbsd")]
 pub mod openbsd;
 #[cfg(target_os = "psp")]
-#[unstable(feature = "psp_std", issue = "none")]
 pub mod psp;
 #[cfg(target_os = "redox")]
 pub mod redox;
