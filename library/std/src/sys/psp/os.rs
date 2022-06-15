@@ -1,3 +1,4 @@
+use super::io::check_cvt_io_error;
 use super::{unsupported, Void};
 use crate::error::Error as StdError;
 use crate::ffi::{CString, OsStr, OsString};
@@ -26,10 +27,7 @@ pub fn getcwd() -> io::Result<PathBuf> {
 pub fn chdir(path: &path::Path) -> io::Result<()> {
     let path = CString::new(path.as_os_str().as_bytes())?;
     let result = unsafe { libc::sceIoChdir(path.as_ptr() as *const u8) };
-    if result < 0 {
-        // TODO propagate the error code
-        return Err(io::const_io_error!(io::ErrorKind::Other, "could not set current directory",));
-    }
+    check_cvt_io_error(result)?;
     // Safety: PSP does not have concurrent threads
     unsafe { CWD = Some(path.to_owned()) };
     Ok(())
