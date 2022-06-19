@@ -234,8 +234,7 @@ impl File {
 
     pub fn file_attr(&self) -> io::Result<FileAttr> {
         let mut stat: libc::SceIoStat = unsafe { core::mem::zeroed() };
-        let stat_result =
-            unsafe { libc::sceIoGetstat(self.path.as_c_str().as_ptr() as *const u8, &mut stat) };
+        let stat_result = unsafe { libc::sceIoGetstat(self.path.as_ptr() as *const u8, &mut stat) };
         if stat_result < 0 {
             return Err(cvt_io_error(stat_result));
         } else {
@@ -272,9 +271,8 @@ impl File {
     pub fn truncate(&self, size: u64) -> io::Result<()> {
         let mut stat: libc::SceIoStat = unsafe { core::mem::zeroed() };
         stat.st_size = size as i64;
-        let result = unsafe {
-            libc::sceIoChstat(self.path.as_c_str().as_ptr() as *const u8, &mut stat, 0x0004)
-        };
+        let result =
+            unsafe { libc::sceIoChstat(self.path.as_ptr() as *const u8, &mut stat, 0x0004) };
         if result < 0 {
             return Err(cvt_io_error(result));
         } else {
@@ -347,15 +345,14 @@ impl File {
     pub fn set_permissions(&self, perm: FilePermissions) -> io::Result<()> {
         let mut stat: libc::SceIoStat = unsafe { core::mem::zeroed() };
         let getstat_result =
-            unsafe { libc::sceIoGetstat(self.path.as_c_str().as_ptr() as *const u8, &mut stat) };
+            unsafe { libc::sceIoGetstat(self.path.as_ptr() as *const u8, &mut stat) };
         if getstat_result < 0 {
             return Err(cvt_io_error(getstat_result));
         } else {
             let non_perm_mode_bits = stat.st_mode & 0x7e00;
             stat.st_mode = non_perm_mode_bits | perm.0;
-            let chstat_result = unsafe {
-                libc::sceIoChstat(self.path.as_c_str().as_ptr() as *const u8, &mut stat, 0x0001)
-            };
+            let chstat_result =
+                unsafe { libc::sceIoChstat(self.path.as_ptr() as *const u8, &mut stat, 0x0001) };
             if chstat_result < 0 {
                 return Err(cvt_io_error(chstat_result));
             } else {
