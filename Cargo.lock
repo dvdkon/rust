@@ -304,9 +304,13 @@ checksum = "bef38d45163c2f1dde094a7dfd33ccf595c92905c8f8f4fdc18d06fb1037718a"
 
 [[package]]
 name = "bitflags"
-version = "2.4.1"
+version = "2.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "327762f6e5a765692301e5bb513e0d9fef63be86bbc14528052b1cd3e6f03e07"
+checksum = "ed570934406eb16438a4e976b1b4500774099c13b8cb96eec99f620f05090ddf"
+dependencies = [
+ "compiler_builtins",
+ "rustc-std-workspace-core",
+]
 
 [[package]]
 name = "block-buffer"
@@ -2524,7 +2528,7 @@ version = "0.27.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2eb04e9c688eff1c89d72b407f168cf79bb9e867a9d3323ed6c01519eb9cc053"
 dependencies = [
- "bitflags 2.4.1",
+ "bitflags 2.4.2",
  "cfg-if",
  "libc",
 ]
@@ -2642,7 +2646,7 @@ version = "0.10.63"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "15c9d69dd87a29568d4d017cfe8ec518706046a05184e5aea92d0af890b803c8"
 dependencies = [
- "bitflags 2.4.1",
+ "bitflags 2.4.2",
  "cfg-if",
  "foreign-types",
  "libc",
@@ -2799,6 +2803,12 @@ dependencies = [
  "smallvec",
  "windows-targets 0.48.1",
 ]
+
+[[package]]
+name = "paste"
+version = "1.0.14"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "de3145af08024dea9fa9914f381a17b8fc6034dfb00f3a84013f7ff43f29ed4c"
 
 [[package]]
 name = "pathdiff"
@@ -3002,12 +3012,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "psp-sys"
+version = "0.1.0"
+dependencies = [
+ "bitflags 2.4.2",
+ "compiler_builtins",
+ "paste",
+ "rustc-std-workspace-core",
+]
+
+[[package]]
 name = "pulldown-cmark"
 version = "0.9.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "57206b407293d2bcd3af849ce869d52068623f19e1b5ff8e8778e3309439682b"
 dependencies = [
- "bitflags 2.4.1",
+ "bitflags 2.4.2",
  "memchr",
  "unicase",
 ]
@@ -3367,7 +3387,7 @@ dependencies = [
 name = "rustc_abi"
 version = "0.0.0"
 dependencies = [
- "bitflags 2.4.1",
+ "bitflags 2.4.2",
  "rand",
  "rand_xoshiro",
  "rustc_data_structures",
@@ -3398,7 +3418,7 @@ dependencies = [
 name = "rustc_ast"
 version = "0.0.0"
 dependencies = [
- "bitflags 2.4.1",
+ "bitflags 2.4.2",
  "memchr",
  "rustc_data_structures",
  "rustc_index",
@@ -3549,7 +3569,7 @@ dependencies = [
 name = "rustc_codegen_llvm"
 version = "0.0.0"
 dependencies = [
- "bitflags 2.4.1",
+ "bitflags 2.4.2",
  "itertools",
  "libc",
  "measureme",
@@ -3584,7 +3604,7 @@ name = "rustc_codegen_ssa"
 version = "0.0.0"
 dependencies = [
  "ar_archive_writer",
- "bitflags 2.4.1",
+ "bitflags 2.4.2",
  "cc",
  "itertools",
  "jobserver",
@@ -3651,7 +3671,7 @@ name = "rustc_data_structures"
 version = "0.0.0"
 dependencies = [
  "arrayvec",
- "bitflags 2.4.1",
+ "bitflags 2.4.2",
  "either",
  "elsa",
  "ena",
@@ -4122,7 +4142,7 @@ dependencies = [
 name = "rustc_metadata"
 version = "0.0.0"
 dependencies = [
- "bitflags 2.4.1",
+ "bitflags 2.4.2",
  "libloading",
  "odht",
  "rustc_ast",
@@ -4152,7 +4172,7 @@ dependencies = [
 name = "rustc_middle"
 version = "0.0.0"
 dependencies = [
- "bitflags 2.4.1",
+ "bitflags 2.4.2",
  "derive_more",
  "either",
  "field-offset",
@@ -4288,7 +4308,7 @@ dependencies = [
 name = "rustc_parse"
 version = "0.0.0"
 dependencies = [
- "bitflags 2.4.1",
+ "bitflags 2.4.2",
  "rustc_ast",
  "rustc_ast_pretty",
  "rustc_data_structures",
@@ -4425,7 +4445,7 @@ dependencies = [
 name = "rustc_resolve"
 version = "0.0.0"
 dependencies = [
- "bitflags 2.4.1",
+ "bitflags 2.4.2",
  "pulldown-cmark",
  "rustc_arena",
  "rustc_ast",
@@ -4464,7 +4484,7 @@ dependencies = [
 name = "rustc_session"
 version = "0.0.0"
 dependencies = [
- "bitflags 2.4.1",
+ "bitflags 2.4.2",
  "getopts",
  "libc",
  "rustc_ast",
@@ -4522,7 +4542,7 @@ dependencies = [
 name = "rustc_symbol_mangling"
 version = "0.0.0"
 dependencies = [
- "bitflags 2.4.1",
+ "bitflags 2.4.2",
  "punycode",
  "rustc-demangle",
  "rustc_data_structures",
@@ -4540,7 +4560,7 @@ dependencies = [
 name = "rustc_target"
 version = "0.0.0"
 dependencies = [
- "bitflags 2.4.1",
+ "bitflags 2.4.2",
  "object",
  "rustc_abi",
  "rustc_data_structures",
@@ -4564,7 +4584,7 @@ checksum = "8ba09476327c4b70ccefb6180f046ef588c26a24cf5d269a9feba316eb4f029f"
 name = "rustc_trait_selection"
 version = "0.0.0"
 dependencies = [
- "bitflags 2.4.1",
+ "bitflags 2.4.2",
  "itertools",
  "rustc_ast",
  "rustc_attr",
@@ -4640,7 +4660,7 @@ dependencies = [
 name = "rustc_type_ir"
 version = "0.0.0"
 dependencies = [
- "bitflags 2.4.1",
+ "bitflags 2.4.2",
  "derivative",
  "rustc_data_structures",
  "rustc_index",
@@ -4771,7 +4791,7 @@ version = "0.38.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "745ecfa778e66b2b63c88a61cb36e0eea109e803b0b86bf9879fbc77c70e86ed"
 dependencies = [
- "bitflags 2.4.1",
+ "bitflags 2.4.2",
  "errno",
  "libc",
  "linux-raw-sys",
@@ -5092,6 +5112,7 @@ dependencies = [
  "panic_abort",
  "panic_unwind",
  "profiler_builtins",
+ "psp-sys",
  "r-efi",
  "r-efi-alloc",
  "rand",

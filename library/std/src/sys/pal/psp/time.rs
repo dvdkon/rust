@@ -1,5 +1,5 @@
 use crate::time::Duration;
-use libc::{sceKernelGetSystemTimeWide, sceKernelLibcTime};
+use psp_sys::{sceKernelGetSystemTimeWide, sceKernelLibcTime};
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Debug, Hash)]
 pub struct Instant(Duration);
@@ -53,11 +53,11 @@ impl SystemTime {
         Self(Duration::from_secs(t))
     }
 
-    pub fn try_from_psp_time(t: &libc::ScePspDateTime) -> Result<SystemTime, ()> {
+    pub fn try_from_psp_time(t: &psp_sys::ScePspDateTime) -> Result<SystemTime, ()> {
         let mut secs_since_epoch: u64 = 0;
         if unsafe {
-            libc::sceRtcGetTime64_t(
-                t as *const libc::ScePspDateTime,
+            psp_sys::sceRtcGetTime64_t(
+                t as *const psp_sys::ScePspDateTime,
                 &mut secs_since_epoch as *mut u64,
             )
         } < 0

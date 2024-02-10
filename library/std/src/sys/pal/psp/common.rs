@@ -8,14 +8,11 @@ pub mod memchr {
     pub use core::slice::memchr::{memchr, memrchr};
 }
 
-#[path = "../unix/os_str.rs"]
-pub mod os_str;
-
 // This is not necessarily correct. May want to consider making it part of the
 // spec definition?
 use crate::os::raw::c_char;
 
-pub unsafe fn init(argc: isize, argv: *const *const u8) {
+pub unsafe fn init(argc: isize, argv: *const *const u8, _sigpipe: u8) {
     // First of all, the arguments types of this function are incorrect, but it's easier to cast
     // them here instead of fixing `std`.
     let argc = argc as usize;
@@ -39,6 +36,10 @@ pub fn unsupported<T>() -> io::Result<T> {
 
 pub fn unsupported_err() -> io::Error {
     io::Error::new(io::ErrorKind::Other, "operation not supported on this platform")
+}
+
+pub fn is_interrupted(_errno: i32) -> bool {
+    false
 }
 
 pub fn decode_error_kind(_code: i32) -> io::ErrorKind {

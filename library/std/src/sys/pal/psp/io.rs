@@ -47,13 +47,15 @@ impl<'a> IoSliceMut<'a> {
     }
 }
 
+pub fn is_terminal<T>(fd: &T) -> bool { false }
+
 #[inline]
 pub(crate) fn check_cvt_io_error(code: i32) -> io::Result<i32> {
     if code < 0 { Err(cvt_io_error(code)) } else { Ok(code) }
 }
 
 pub(crate) fn cvt_io_error(err: i32) -> io::Error {
-    match err {
+    match err as u32 {
         0x80010001 => {
             io::const_io_error!(io::ErrorKind::PermissionDenied, "Operation not permitted")
         }

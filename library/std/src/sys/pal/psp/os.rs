@@ -26,7 +26,7 @@ pub fn getcwd() -> io::Result<PathBuf> {
 
 pub fn chdir(path: &path::Path) -> io::Result<()> {
     let path = CString::new(path.as_os_str().as_bytes())?;
-    let result = unsafe { libc::sceIoChdir(path.as_ptr() as *const u8) };
+    let result = unsafe { psp_sys::sceIoChdir(path.as_ptr() as *const u8) };
     check_cvt_io_error(result)?;
     // Safety: PSP does not have concurrent threads
     unsafe { CWD = Some(path.to_owned()) };
@@ -74,7 +74,16 @@ pub fn current_exe() -> io::Result<PathBuf> {
     unsupported()
 }
 
+#[derive(Debug)]
 pub struct Env(Void);
+
+impl Env {
+    // FIXME(https://github.com/rust-lang/rust/issues/114583): Remove this when <OsStr as Debug>::fmt matches <str as Debug>::fmt.
+    pub fn str_debug(&self) -> impl fmt::Debug + '_ {
+        let Self(inner) = self;
+        match *inner {}
+    }
+}
 
 impl Iterator for Env {
     type Item = (OsString, OsString);

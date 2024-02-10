@@ -1,13 +1,15 @@
 #![unstable(reason = "not public", issue = "none", feature = "fd")]
 
 use crate::cmp;
-use crate::io::{self, IoSlice, IoSliceMut, Read, ReadBuf};
+use crate::io::{self, IoSlice, IoSliceMut, Read, BorrowedCursor};
 use crate::mem;
 use crate::sys::decode_error_kind;
 use crate::sys_common::AsInner;
 
-use libc::{
-    self, c_void, sceIoClose, sceIoLseek, sceIoRead, sceIoWrite, ssize_t, IoWhence, SceUid,
+use core::ffi::c_void;
+use libc::ssize_t;
+use psp_sys::{
+    self, sceIoClose, sceIoLseek, sceIoRead, sceIoWrite, IoWhence, SceUid,
 };
 
 fn i_to_usize_or_errkind(i: i32) -> io::Result<usize> {
@@ -108,7 +110,7 @@ impl FileDesc {
     //    pub fn set_nonblocking(&self, nonblocking: bool) -> io::Result<()> {
     //        unsafe {
     //            let v = nonblocking as c_int;
-    //            cvt(libc::ioctl(self.fd, libc::FIONBIO, &v))?;
+    //            cvt(psp_sys::ioctl(self.fd, psp_sys::FIONBIO, &v))?;
     //            Ok(())
     //        }
     //    }
@@ -117,20 +119,20 @@ impl FileDesc {
     //    // VxWorks uses fcntl to set O_NONBLOCK to the pipes
     //    pub fn set_nonblocking_pipe(&self, nonblocking: bool) -> io::Result<()> {
     //        unsafe {
-    //            let mut flags = cvt(libc::fcntl(self.fd, libc::F_GETFL, 0))?;
+    //            let mut flags = cvt(psp_sys::fcntl(self.fd, psp_sys::F_GETFL, 0))?;
     //            flags = if nonblocking {
-    //                flags | libc::O_NONBLOCK
+    //                flags | psp_sys::O_NONBLOCK
     //            } else {
-    //                flags & !libc::O_NONBLOCK
+    //                flags & !psp_sys::O_NONBLOCK
     //            };
-    //            cvt(libc::fcntl(self.fd, libc::F_SETFL, flags))?;
+    //            cvt(psp_sys::fcntl(self.fd, psp_sys::F_SETFL, flags))?;
     //            Ok(())
     //        }
     //    }
 
     //    pub fn duplicate(&self) -> io::Result<FileDesc> {
     //        let fd = self.raw();
-    //        match cvt(unsafe { libc::fcntl(fd, libc::F_DUPFD_CLOEXEC, 0) }) {
+    //        match cvt(unsafe { psp_sys::fcntl(fd, psp_sys::F_DUPFD_CLOEXEC, 0) }) {
     //            Ok(newfd) => Ok(FileDesc::new(newfd)),
     //            Err(e) => return Err(e),
     //        }
@@ -142,7 +144,7 @@ impl<'a> Read for &'a FileDesc {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         (**self).read(buf)
     }
-    fn read_buf(&mut self, buf: &mut ReadBuf<'_>) -> io::Result<()> {
+    fn read_buf(&mut self, buf: BorrowedCursor<'_>) -> io::Result<()> {
         crate::io::default_read_buf(|buf| self.read(buf), buf)
     }}
 
