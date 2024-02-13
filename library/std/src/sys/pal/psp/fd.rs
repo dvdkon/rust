@@ -8,7 +8,7 @@ use crate::sys_common::AsInner;
 
 use core::ffi::c_void;
 use libc::ssize_t;
-use psp_sys::{
+use psp::sys::{
     self, sceIoClose, sceIoLseek, sceIoRead, sceIoWrite, IoWhence, SceUid,
 };
 
@@ -110,7 +110,7 @@ impl FileDesc {
     //    pub fn set_nonblocking(&self, nonblocking: bool) -> io::Result<()> {
     //        unsafe {
     //            let v = nonblocking as c_int;
-    //            cvt(psp_sys::ioctl(self.fd, psp_sys::FIONBIO, &v))?;
+    //            cvt(psp::sys::ioctl(self.fd, psp::sys::FIONBIO, &v))?;
     //            Ok(())
     //        }
     //    }
@@ -119,20 +119,20 @@ impl FileDesc {
     //    // VxWorks uses fcntl to set O_NONBLOCK to the pipes
     //    pub fn set_nonblocking_pipe(&self, nonblocking: bool) -> io::Result<()> {
     //        unsafe {
-    //            let mut flags = cvt(psp_sys::fcntl(self.fd, psp_sys::F_GETFL, 0))?;
+    //            let mut flags = cvt(psp::sys::fcntl(self.fd, psp::sys::F_GETFL, 0))?;
     //            flags = if nonblocking {
-    //                flags | psp_sys::O_NONBLOCK
+    //                flags | psp::sys::O_NONBLOCK
     //            } else {
-    //                flags & !psp_sys::O_NONBLOCK
+    //                flags & !psp::sys::O_NONBLOCK
     //            };
-    //            cvt(psp_sys::fcntl(self.fd, psp_sys::F_SETFL, flags))?;
+    //            cvt(psp::sys::fcntl(self.fd, psp::sys::F_SETFL, flags))?;
     //            Ok(())
     //        }
     //    }
 
     //    pub fn duplicate(&self) -> io::Result<FileDesc> {
     //        let fd = self.raw();
-    //        match cvt(unsafe { psp_sys::fcntl(fd, psp_sys::F_DUPFD_CLOEXEC, 0) }) {
+    //        match cvt(unsafe { psp::sys::fcntl(fd, psp::sys::F_DUPFD_CLOEXEC, 0) }) {
     //            Ok(newfd) => Ok(FileDesc::new(newfd)),
     //            Err(e) => return Err(e),
     //        }

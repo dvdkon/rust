@@ -3012,10 +3012,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "psp-sys"
-version = "0.1.0"
+name = "psp"
+version = "0.3.7"
 dependencies = [
  "bitflags 2.4.2",
+ "cfg-if",
  "compiler_builtins",
  "paste",
  "rustc-std-workspace-core",
@@ -5112,7 +5113,7 @@ dependencies = [
  "panic_abort",
  "panic_unwind",
  "profiler_builtins",
- "psp-sys",
+ "psp",
  "r-efi",
  "r-efi-alloc",
  "rand",

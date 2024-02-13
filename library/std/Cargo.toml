@@ -58,7 +58,7 @@ r-efi = { version = "4.2.0", features = ['rustc-dep-of-std'] }
 r-efi-alloc = { version = "1.0.0", features = ['rustc-dep-of-std'] }
 
 [target.'cfg(target_os = "psp")'.dependencies]
-psp-sys = { path = "../../../psp-sys", features = ['rustc-dep-of-std'], public = true }
+psp = { path = "../../../rust-psp/psp", features = ['rustc-dep-of-std'], default-features = false }
 
 [features]
 backtrace = [

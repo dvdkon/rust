@@ -26,7 +26,7 @@ pub fn getcwd() -> io::Result<PathBuf> {
 
 pub fn chdir(path: &path::Path) -> io::Result<()> {
     let path = CString::new(path.as_os_str().as_bytes())?;
-    let result = unsafe { psp_sys::sceIoChdir(path.as_ptr() as *const u8) };
+    let result = unsafe { psp::sys::sceIoChdir(path.as_ptr() as *const u8) };
     check_cvt_io_error(result)?;
     // Safety: PSP does not have concurrent threads
     unsafe { CWD = Some(path.to_owned()) };

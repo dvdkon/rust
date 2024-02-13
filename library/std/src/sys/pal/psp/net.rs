@@ -18,29 +18,29 @@ pub struct Socket(i32);
 
 impl Drop for Socket {
     fn drop(&mut self) {
-        unsafe { psp_sys::sceNetInetClose(self.0); }
+        unsafe { psp::sys::sceNetInetClose(self.0); }
     }
 }
 
 #[derive(Clone)]
 pub struct TcpStream(Socket);
 
-fn socketaddr_to_sockaddr(addr: &SocketAddr) -> io::Result<psp_sys::sockaddr> {
+fn socketaddr_to_sockaddr(addr: &SocketAddr) -> io::Result<psp::sys::sockaddr> {
     match addr {
         SocketAddr::V4(v4) =>
-            Ok(psp_sys::sockaddr_in::new(u32::from_be_bytes(v4.ip().octets()), v4.port()).into()),
+            Ok(psp::sys::sockaddr_in::new(u32::from_be_bytes(v4.ip().octets()), v4.port()).into()),
         _ => unsupported(),
     }
 }
 
 impl TcpStream {
     pub fn connect(addr: io::Result<&SocketAddr>) -> io::Result<TcpStream> {
-        let sock = unsafe { psp_sys::sceNetInetSocket(AF_INET as i32, SOCK_STREAM, 0) };
+        let sock = unsafe { psp::sys::sceNetInetSocket(AF_INET as i32, SOCK_STREAM, 0) };
         if sock < 0 {
             todo!()
         } else {
             let sockaddr = socketaddr_to_sockaddr(addr?)?;
-            if unsafe { psp_sys::sceNetInetConnect(sock, &sockaddr, sockaddr.sa_len as u32) } < 0  {
+            if unsafe { psp::sys::sceNetInetConnect(sock, &sockaddr, sockaddr.sa_len as u32) } < 0  {
                 todo!("Error Handling")
             } else {
                 Ok(TcpStream(Socket(sock)))
@@ -77,9 +77,9 @@ impl TcpStream {
     }
 
     pub fn read(&self, buf: &mut [u8]) -> io::Result<usize> {
-        let result = unsafe { psp_sys::sceNetInetRecv(self.0.0, buf.as_mut_ptr() as *mut c_void, buf.len(), 0) };
+        let result = unsafe { psp::sys::sceNetInetRecv(self.0.0, buf.as_mut_ptr() as *mut c_void, buf.len(), 0) };
         if result < 0 {
-            let err = unsafe { psp_sys::sceNetInetGetErrno() };
+            let err = unsafe { psp::sys::sceNetInetGetErrno() };
             Err(io::Error::new(io::ErrorKind::Other, err.to_string()))
         } else {
             Ok(result as usize)
@@ -99,7 +99,7 @@ impl TcpStream {
     }
 
     pub fn write(&self, buf: &[u8]) -> io::Result<usize> {
-        let result = unsafe { psp_sys::sceNetInetSend(self.0.0, buf.as_ptr() as *const c_void, buf.len(), 0) };
+        let result = unsafe { psp::sys::sceNetInetSend(self.0.0, buf.as_ptr() as *const c_void, buf.len(), 0) };
         if result < 0 {
             todo!("Error Handling")
         } else {
@@ -118,13 +118,13 @@ impl TcpStream {
     fn flush(&mut self) -> io::Result<()> { Ok(()) }
 
     pub fn peer_addr(&self) -> io::Result<SocketAddr> {
-        let mut addr: psp_sys::sockaddr = unsafe { core::mem::zeroed() };
-        let mut addr_len: psp_sys::socklen_t = core::mem::size_of::<psp_sys::sockaddr_in>() as psp_sys::socklen_t;
-        let ret = unsafe { psp_sys::sceNetInetGetpeername(self.0.0, &mut addr, &mut addr_len) };
+        let mut addr: psp::sys::sockaddr = unsafe { core::mem::zeroed() };
+        let mut addr_len: psp::sys::socklen_t = core::mem::size_of::<psp::sys::sockaddr_in>() as psp::sys::socklen_t;
+        let ret = unsafe { psp::sys::sceNetInetGetpeername(self.0.0, &mut addr, &mut addr_len) };
         if ret < 0 {
             todo!("Error Handling")
         } else {
-            let addr = unsafe { core::mem::transmute::<psp_sys::sockaddr, psp_sys::sockaddr_in>(addr) };
+            let addr = unsafe { core::mem::transmute::<psp::sys::sockaddr, psp::sys::sockaddr_in>(addr) };
             let port = addr.sin_port;
             let octets = u32::to_le_bytes(addr.sin_addr.s_addr);
             let sockaddr = SocketAddrV4::new(Ipv4Addr::new(octets[0], octets[1], octets[2], octets[3]), port);
@@ -133,13 +133,13 @@ impl TcpStream {
     }
 
     pub fn socket_addr(&self) -> io::Result<SocketAddr> {
-        let mut addr: psp_sys::sockaddr = unsafe { core::mem::zeroed() };
-        let mut addr_len: psp_sys::socklen_t = core::mem::size_of::<psp_sys::sockaddr_in>() as psp_sys::socklen_t;
-        let ret = unsafe { psp_sys::sceNetInetGetsockname(self.0.0, &mut addr, &mut addr_len) };
+        let mut addr: psp::sys::sockaddr = unsafe { core::mem::zeroed() };
+        let mut addr_len: psp::sys::socklen_t = core::mem::size_of::<psp::sys::sockaddr_in>() as psp::sys::socklen_t;
+        let ret = unsafe { psp::sys::sceNetInetGetsockname(self.0.0, &mut addr, &mut addr_len) };
         if ret < 0 {
             todo!("Error Handling")
         } else {
-            let addr = unsafe { core::mem::transmute::<psp_sys::sockaddr, psp_sys::sockaddr_in>(addr) };
+            let addr = unsafe { core::mem::transmute::<psp::sys::sockaddr, psp::sys::sockaddr_in>(addr) };
             let port = addr.sin_port;
             let octets = u32::to_le_bytes(addr.sin_addr.s_addr);
             let sockaddr = SocketAddrV4::new(Ipv4Addr::new(octets[0], octets[1], octets[2], octets[3]), port);
@@ -148,7 +148,7 @@ impl TcpStream {
     }
 
     pub fn shutdown(&self, how: Shutdown) -> io::Result<()> {
-        let result = unsafe { psp_sys::sceNetInetShutdown(self.0.0, how as i32) };
+        let result = unsafe { psp::sys::sceNetInetShutdown(self.0.0, how as i32) };
         if result < 0 {
             todo!("Error Handling")
         } else {
@@ -210,15 +210,15 @@ pub struct TcpListener(Socket);
 
 impl TcpListener {
     pub fn bind(addr: io::Result<&SocketAddr>) -> io::Result<TcpListener> {
-        let sock = unsafe { psp_sys::sceNetInetSocket(AF_INET as i32, SOCK_STREAM, 0) };
+        let sock = unsafe { psp::sys::sceNetInetSocket(AF_INET as i32, SOCK_STREAM, 0) };
         if sock < 0 {
             todo!()
         } else {
             let sockaddr = socketaddr_to_sockaddr(addr?)?;
-            if unsafe { psp_sys::sceNetInetBind(sock, &sockaddr, sockaddr.sa_len as u32) } < 0  {
+            if unsafe { psp::sys::sceNetInetBind(sock, &sockaddr, sockaddr.sa_len as u32) } < 0  {
                 todo!("Error Handling")
             } else {
-                if unsafe { psp_sys::sceNetInetListen(sock, 128) } < 0 {
+                if unsafe { psp::sys::sceNetInetListen(sock, 128) } < 0 {
                     todo!("Error Handling")
                 } else {
                     Ok(TcpListener(Socket(sock)))
@@ -228,13 +228,13 @@ impl TcpListener {
     }
 
     pub fn socket_addr(&self) -> io::Result<SocketAddr> {
-        let mut addr: psp_sys::sockaddr = unsafe { core::mem::zeroed() };
-        let mut addr_len: psp_sys::socklen_t = core::mem::size_of::<psp_sys::sockaddr_in>() as psp_sys::socklen_t;
-        let ret = unsafe { psp_sys::sceNetInetGetsockname(self.0.0, &mut addr, &mut addr_len) };
+        let mut addr: psp::sys::sockaddr = unsafe { core::mem::zeroed() };
+        let mut addr_len: psp::sys::socklen_t = core::mem::size_of::<psp::sys::sockaddr_in>() as psp::sys::socklen_t;
+        let ret = unsafe { psp::sys::sceNetInetGetsockname(self.0.0, &mut addr, &mut addr_len) };
         if ret < 0 {
             todo!("Error Handling")
         } else {
-            let addr = unsafe { core::mem::transmute::<psp_sys::sockaddr, psp_sys::sockaddr_in>(addr) };
+            let addr = unsafe { core::mem::transmute::<psp::sys::sockaddr, psp::sys::sockaddr_in>(addr) };
             let port = addr.sin_port;
             let octets = u32::to_le_bytes(addr.sin_addr.s_addr);
             let sockaddr = SocketAddrV4::new(Ipv4Addr::new(octets[0], octets[1], octets[2], octets[3]), port);
@@ -243,13 +243,13 @@ impl TcpListener {
     }
 
     pub fn accept(&self) -> io::Result<(TcpStream, SocketAddr)> {
-        let mut addr: psp_sys::sockaddr = unsafe { core::mem::zeroed() };
-        let mut addr_len: psp_sys::socklen_t = 0;
-        let sock = unsafe { psp_sys::sceNetInetAccept(self.0.0, &mut addr, &mut addr_len) };
+        let mut addr: psp::sys::sockaddr = unsafe { core::mem::zeroed() };
+        let mut addr_len: psp::sys::socklen_t = 0;
+        let sock = unsafe { psp::sys::sceNetInetAccept(self.0.0, &mut addr, &mut addr_len) };
         if sock < 0 {
             todo!("Error Handling")
         } else {
-            let addr = unsafe { core::mem::transmute::<psp_sys::sockaddr, psp_sys::sockaddr_in>(addr) };
+            let addr = unsafe { core::mem::transmute::<psp::sys::sockaddr, psp::sys::sockaddr_in>(addr) };
             let port = addr.sin_port;
             let octets = u32::to_le_bytes(addr.sin_addr.s_addr);
             let sockaddr = SocketAddrV4::new(Ipv4Addr::new(octets[0], octets[1], octets[2], octets[3]), port);
@@ -302,12 +302,12 @@ pub struct UdpSocket(Socket);
 
 impl UdpSocket {
     pub fn bind(addr: io::Result<&SocketAddr>) -> io::Result<UdpSocket> {
-        let sock = unsafe { psp_sys::sceNetInetSocket(AF_INET as i32, SOCK_DGRAM, 0) };
+        let sock = unsafe { psp::sys::sceNetInetSocket(AF_INET as i32, SOCK_DGRAM, 0) };
         if sock < 0 {
             todo!()
         } else {
             let sockaddr = socketaddr_to_sockaddr(addr?)?;
-            if unsafe { psp_sys::sceNetInetBind(sock, &sockaddr, sockaddr.sa_len as u32) } < 0 {
+            if unsafe { psp::sys::sceNetInetBind(sock, &sockaddr, sockaddr.sa_len as u32) } < 0 {
                 todo!("Error Handling")
             } else {
                 Ok(UdpSocket(Socket(sock)))
@@ -324,13 +324,13 @@ impl UdpSocket {
     }
 
     pub fn recv_from(&self, buf: &mut [u8]) -> io::Result<(usize, SocketAddr)> {
-        let mut addr: psp_sys::sockaddr = unsafe { core::mem::zeroed() };
-        let mut addr_len: psp_sys::socklen_t = core::mem::size_of::<psp_sys::sockaddr_in>() as psp_sys::socklen_t;
-        let ret = unsafe { psp_sys::sceNetInetRecvfrom(self.0.0, buf.as_mut_ptr() as *mut _, buf.len(), 0, &mut addr, &mut addr_len) as i32 }; //TODO change to i32 upstream, returns -1 on error
+        let mut addr: psp::sys::sockaddr = unsafe { core::mem::zeroed() };
+        let mut addr_len: psp::sys::socklen_t = core::mem::size_of::<psp::sys::sockaddr_in>() as psp::sys::socklen_t;
+        let ret = unsafe { psp::sys::sceNetInetRecvfrom(self.0.0, buf.as_mut_ptr() as *mut _, buf.len(), 0, &mut addr, &mut addr_len) as i32 }; //TODO change to i32 upstream, returns -1 on error
         if ret < 0  {
             todo!("Error Handling")
         } else {
- let addr = unsafe { core::mem::transmute::<psp_sys::sockaddr, psp_sys::sockaddr_in>(addr) };
+ let addr = unsafe { core::mem::transmute::<psp::sys::sockaddr, psp::sys::sockaddr_in>(addr) };
             let port = addr.sin_port;
             let octets = u32::to_le_bytes(addr.sin_addr.s_addr);
             let sockaddr = SocketAddrV4::new(Ipv4Addr::new(octets[0], octets[1], octets[2], octets[3]), port);
@@ -344,7 +344,7 @@ impl UdpSocket {
 
     pub fn send_to(&self, buf: &[u8], addr: &SocketAddr) -> io::Result<usize> {
         let sockaddr = socketaddr_to_sockaddr(addr)?;
-        let ret = unsafe { psp_sys::sceNetInetSendto(self.0.0, buf.as_ptr() as *const _, buf.len(), 0, &sockaddr, sockaddr.sa_len as psp_sys::socklen_t) as i32 }; //TODO change to i32 upstream, returns -1 on error
+        let ret = unsafe { psp::sys::sceNetInetSendto(self.0.0, buf.as_ptr() as *const _, buf.len(), 0, &sockaddr, sockaddr.sa_len as psp::sys::socklen_t) as i32 }; //TODO change to i32 upstream, returns -1 on error
         if ret < 0  {
             todo!("Error Handling")
         } else {
@@ -480,8 +480,8 @@ impl LookupHost {
 impl Iterator for LookupHost {
     type Item = SocketAddr;
     fn next(&mut self) -> Option<SocketAddr> {
-        let mut in_addr: psp_sys::in_addr = unsafe { core::mem::zeroed() };
-        let result =  unsafe { psp_sys::sceNetResolverStartNtoA(self.resolver_id, self.hostname.as_ptr() as *const u8, &mut in_addr, self.timeout, self.retries) };
+        let mut in_addr: psp::sys::in_addr = unsafe { core::mem::zeroed() };
+        let result =  unsafe { psp::sys::sceNetResolverStartNtoA(self.resolver_id, self.hostname.as_ptr() as *const u8, &mut in_addr, self.timeout, self.retries) };
         if result < 0 || in_addr.s_addr == self.prev_result {
             None
         } else {
@@ -508,7 +508,7 @@ impl TryFrom<&str> for LookupHost {
 
         let mut rid: i32 = 0;
         let mut dns_buf: [u8; 1024] = [0u8; 1024];
-        if unsafe { psp_sys::sceNetResolverCreate(&mut rid, &mut dns_buf[0] as *mut _ as *mut _, dns_buf.len() as u32) } < 0 {
+        if unsafe { psp::sys::sceNetResolverCreate(&mut rid, &mut dns_buf[0] as *mut _ as *mut _, dns_buf.len() as u32) } < 0 {
             todo!("Error Handling");
         } else {
             Ok(LookupHost {
@@ -531,7 +531,7 @@ impl TryFrom<(&str, u16)> for LookupHost {
         let cstring = crate::ffi::CString::new(v.0).unwrap();
         let mut rid: i32 = 0;
         let mut dns_buf: [u8; 1024] = [0u8; 1024];
-        if unsafe { psp_sys::sceNetResolverCreate(&mut rid, &mut dns_buf[0] as *mut _ as *mut _, dns_buf.len() as u32) } < 0 {
+        if unsafe { psp::sys::sceNetResolverCreate(&mut rid, &mut dns_buf[0] as *mut _ as *mut _, dns_buf.len() as u32) } < 0 {
             todo!("Error Handling");
         } else {
             Ok(LookupHost {
@@ -549,7 +549,7 @@ impl TryFrom<(&str, u16)> for LookupHost {
 
 impl Drop for LookupHost {
     fn drop(&mut self) {
-        unsafe { psp_sys::sceNetResolverDelete(self.resolver_id) };
+        unsafe { psp::sys::sceNetResolverDelete(self.resolver_id) };
     }
 }
 
@@ -557,8 +557,8 @@ pub mod netc {
     pub const AF_INET: u8 = 2;
     pub const AF_INET6: u8 = 24;
 
-    pub use psp_sys::in_addr;
-    pub use psp_sys::sockaddr_in;
+    pub use psp::sys::in_addr;
+    pub use psp::sys::sockaddr_in;
     pub type sa_family_t = u8;
 
     // Dummy types to satisfy the rest of std, the PSP doesn't support IPv6

@@ -1,6 +1,6 @@
 use crate::io;
 use crate::sys::fd::FileDesc;
-use psp_sys::{sceIoRead, sceIoWrite, sceKernelStderr, sceKernelStdin, sceKernelStdout};
+use psp::sys::{sceIoRead, sceIoWrite, sceKernelStderr, sceKernelStdin, sceKernelStdout};
 
 pub struct Stdin;
 pub struct Stdout;
